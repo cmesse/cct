@@ -8,7 +8,7 @@ import frenet
 
 # the basecurve
 C = frenet.BasecurveCCT( 60, 60, 1, 68, 4 )
-A = frenet.CrossSection(3,10,2)
+A = frenet.CrossSection(3,4,1)
 
 
 G = frenet.Geometry(C,A)

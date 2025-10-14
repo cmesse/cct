@@ -20,7 +20,8 @@ class BasecurveCCT( Basecurve ) :
         # tan of tilt angle
         self.tan_alpha = np.tan( angle * np.pi/180 )
 
-        self.t = self.make_equidistant(0, nturns * np.pi * 2, int(nturns) * 48)
+        self.t, self.s = self.make_equidistant(0, nturns * np.pi * 2, nturns * self.num_points_per_turn )
+
 
 
     def r( self, t: float):

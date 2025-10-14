@@ -38,7 +38,7 @@ class Tape:
         self.z0 = np.nan
         self.z1 = np.nan
 
-    def _make_points(self ):
+    def _make_points(self):
         n = len(self.basecurve.t)
 
         for k in range(n):
@@ -47,57 +47,61 @@ class Tape:
             T = self.basecurve.transform(t)
 
             # left point
-            p0 = np.zeros([3,1])
-            p0[0] = self.cross_section.leftpoints[self.index][0]
-            p0[1] = self.cross_section.leftpoints[self.index][1]
-            p = m + np.linalg.matmul(T,p0)
+            p0 = np.array([
+                self.cross_section.leftpoints[self.index][0],  # width direction (n)
+                self.cross_section.leftpoints[self.index][1],  # thickness direction (b)
+                0.0
+            ])
+            p = m.flatten() + T @ p0
 
-            self.points_left.append(Point(p[0][0],p[1][0],p[2][0],self.resolution))
+            self.points_left.append(Point(p[0], p[1], p[2], self.resolution))
 
             # right point
-            q0 = np.zeros([3,1])
-            q0[0] = self.cross_section.rightpoints[self.index][0]
-            q0[1] = self.cross_section.rightpoints[self.index][1]
-            q = m +  np.linalg.matmul(T,q0)
+            q0 = np.array([
+                self.cross_section.rightpoints[self.index][0],
+                self.cross_section.rightpoints[self.index][1],
+                0.0
+            ])
+            q = m.flatten() + T @ q0
 
-            self.points_right.append(Point(q[0][0],q[1][0],q[2][0],self.resolution))
+            self.points_right.append(Point(q[0], q[1], q[2], self.resolution))
 
-        if self.make_ends :
-
+        if self.make_ends:
             t = self.basecurve.t[0]
             m = self.basecurve.r(t)
-            self.z0 = m[2][0] - self.delta_z
+            self.z0 = m[2, 0] - self.delta_z
             v0 = self.basecurve.v(t)
 
             P0 = self.points_left[0]
-            P1 = self.points_left[-1]
 
-            xi = (self.z0 - P0.z)/v0[2]
-            P = Point(P0.x+xi*v0[0],P0.y+xi*v0[1],self.z0,self.resolution)
+            xi = (self.z0 - P0.z) / v0[2]
+            P = Point(P0.x + xi * v0[0], P0.y + xi * v0[1], self.z0, self.resolution)
 
             Q0 = self.points_right[0]
-            Q1 = self.points_right[-1]
 
             xi = (self.z0 - Q0.z) / v0[2]
-            Q = Point(Q0.x + xi * v0[0], Q0.y + xi * v0[1], self.z0,self.resolution)
+            Q = Point(Q0.x + xi * v0[0], Q0.y + xi * v0[1], self.z0, self.resolution)
 
-            self.points_left.insert(0, P )
+            self.points_left.insert(0, P)
             self.points_right.insert(0, Q)
 
             t = self.basecurve.t[-1]
             m = self.basecurve.r(t)
-            self.z1 = m[2][0] + self.delta_z
+            self.z1 = m[2, 0] + self.delta_z
             v1 = self.basecurve.v(t)
 
+            P1 = self.points_left[-1]
 
             xi = (self.z1 - P1.z) / v1[2]
             P = Point(P1.x + xi * v1[0], P1.y + xi * v1[1], self.z1, self.resolution)
-
-
             self.points_left.append(P)
+
+            Q1 = self.points_right[-1]
+
             xi = (self.z1 - Q1.z) / v1[2]
             Q = Point(Q1.x + xi * v1[0], Q1.y + xi * v1[1], self.z1, self.resolution)
             self.points_right.append(Q)
+
 
     def _make_curves(self):
 

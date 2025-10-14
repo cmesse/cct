@@ -1,5 +1,7 @@
 import numpy as np
-
+from scipy import interpolate
+from scipy.special import roots_jacobi
+from scipy.special import eval_legendre
 
 class Basecurve :
 
@@ -7,6 +9,9 @@ class Basecurve :
         self._nintpoints = 7
         self._intpoints, self._weights = np.polynomial.legendre.leggauss(self._nintpoints)
         self.t = None
+        self.theta = None
+        self._thetaspline = None
+        self.num_points_per_turn = 48
 
     # the actual Basecurve
     def r( self, t: float ):
@@ -45,6 +50,8 @@ class Basecurve :
         for k in range(1,n):
             l += self.segment_length(t[k-1],t[k])
 
+        s = np.linspace(0,l,n)
+
         # expected distance
         dl = l / (n-1)
 
@@ -64,7 +71,7 @@ class Basecurve :
             f3 = 1
 
             c = 0
-            while abs(f3) > 1e-7:
+            while abs(f3) > 1e-12:
                 # intersection point
                 if c < 20 :
                     t3 = t1 - f1*(t2-t1)/(f2-f1)
@@ -82,28 +89,35 @@ class Basecurve :
 
             t[k] = t3
 
-        return t
+        return t, s
 
-    def transform(self, t: float ):
-        v = self.v( t )
-        a = self.a( t )
 
-        # tangent
+    def transform(self, t: float, theta_T: float = 0.0 ):
+        v = self.v(t)
+        a = self.a(t)
+
+        # Tangent (same for both frames)
         T = v / np.linalg.norm(v)
 
-        # binomial vector
-        vxa = np.linalg.cross(v,a)
-        B = vxa/np.linalg.norm(vxa)
-
-        # normal vector
-        N = np.linalg.cross(B,T)
+        # Classical Frenet frame
+        vxa = np.cross(v, a)
+        B = vxa / np.linalg.norm(vxa)
+        N = np.cross(B, T)
         N /= np.linalg.norm(N)
 
-        # transformation matrix
-        R = np.zeros([3,3])
-        R[:,0] = N
-        R[:,1] = B
-        R[:,2] = T
+        # For geodesic strip: n = N, b = B (before twist)
+        # Apply additional twist around T (Equations 19.32-19.33)
+        cos_theta = np.cos(theta_T)
+        sin_theta = np.sin(theta_T)
+
+        n = cos_theta * N + sin_theta * B
+        b = cos_theta * B - sin_theta * N
+
+        # Transformation matrix: columns are the basis vectors
+        R = np.zeros([3, 3])
+        R[:, 0] = n  # Strip normal (corresponds to x0 direction - width)
+        R[:, 1] = b  # Strip binormal (corresponds to y0 direction - thickness)
+        R[:, 2] = T  # Tangent (corresponds to z0 direction - length)
 
         return R
 
@@ -118,3 +132,57 @@ class Basecurve :
         tau = nvxa * self.b(t)/(nvxa**2)
 
         return kappa, tau
+
+    def strip_curvatures(self, t: float, theta_T: float = 0.0, dtheta_T_ds: float = 0.0):
+        v = self.v(t)
+        a = self.a(t)
+        b_jerk = self.b(t)
+
+        v_norm = np.linalg.norm(v)
+        vxa = np.cross(v, a)
+        nvxa = np.linalg.norm(vxa)
+
+        # Classical Frenet curvature and torsion (Equation 3.30)
+        kappa_frenet = nvxa / (v_norm ** 3)
+        tau_frenet = np.dot(vxa, b_jerk) / (nvxa ** 2)
+
+        # For geodesic base curve: kappa_g_base = 0, kappa_n_base = kappa_frenet
+        # Apply twist transformation (Equations 19.30, 19.34-19.35)
+        cos_theta = np.cos(theta_T)
+        sin_theta = np.sin(theta_T)
+
+        tau = tau_frenet + dtheta_T_ds  # Equation 19.30
+        kappa_g = sin_theta * kappa_frenet  # Equation 19.34 (with kappa_g_base = 0)
+        kappa_n = cos_theta * kappa_frenet  # Equation 19.35 (with kappa_g_base = 0)
+
+        return tau, kappa_g, kappa_n
+
+    # value to minimize using SLSQP (not needed for CCT)
+    def _integrate_geodesic_curvature(self, t, theta ):
+
+        spline = interpolate.splrep(t, theta)
+        n = len(t)
+
+        val = 0.0
+
+        # loop over all segments
+        for k in range(1,n):
+
+            ta = t[k-1]
+            tb = t[k]
+
+            # loop over all integration points
+            val_k = 0
+            for i in range(self._nintpoints):
+                tk = 0.5*((1-self._intpoints[i])*ta + ( 1 + self._intpoints[i])*tb)
+                theta = interpolate.splev(tk, spline)
+
+                tau, kappa_g, kappa_n = self.strip_curvatures(tk, theta )
+
+                val_k += self._weights[i] * kappa_g * kappa_g
+
+            val_k *= (tb - ta) * 0.5
+
+            val += val_k
+
+        return val
