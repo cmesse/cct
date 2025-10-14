@@ -13,7 +13,7 @@ class Basecurve :
         self._thetaspline = None
         self.num_points_per_turn = 48
 
-    # the actual Basecurve
+    # the actual basecurve function
     def r( self, t: float ):
         raise NotImplementedError()
 
@@ -175,9 +175,10 @@ class Basecurve :
             val_k = 0
             for i in range(self._nintpoints):
                 tk = 0.5*((1-self._intpoints[i])*ta + ( 1 + self._intpoints[i])*tb)
-                theta = interpolate.splev(tk, spline)
+                theta_k = interpolate.splev(tk, spline, der=0)
+                dtheta_dt = interpolate.splev(tk, spline, der=1)
 
-                tau, kappa_g, kappa_n = self.strip_curvatures(tk, theta )
+                tau, kappa_g, kappa_n = self.strip_curvatures(tk, theta_k, dtheta_dt )
 
                 val_k += self._weights[i] * kappa_g * kappa_g
 
