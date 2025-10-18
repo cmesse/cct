@@ -93,17 +93,23 @@ class Basecurve :
 
 
     def transform(self, t: float, theta_T: float = 0.0 ):
-        v = self.v(t)
-        a = self.a(t)
 
-        # Tangent (same for both frames)
-        T = v / np.linalg.norm(v)
+        if t == 0 :
+            T = np.array([0.0,0.0,1.0])
+            N = np.array([-1.0, 0.0, 0.0])
+            B = np.array([0.0, -1.0, 0.0])
+        else:
+            v = self.v(t)
+            a = self.a(t)
 
-        # Classical Frenet frame
-        vxa = np.cross(v, a)
-        B = vxa / np.linalg.norm(vxa)
-        N = np.cross(B, T)
-        N /= np.linalg.norm(N)
+            # Tangent (same for both frames)
+            T = v / np.linalg.norm(v)
+
+            # Classical Frenet frame
+            vxa = np.cross(v, a)
+            B = vxa / np.linalg.norm(vxa)
+            N = np.cross(B, T)
+            N /= np.linalg.norm(N)
 
         # For geodesic strip: n = N, b = B (before twist)
         # Apply additional twist around T (Equations 19.32-19.33)

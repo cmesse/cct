@@ -22,7 +22,10 @@ for k in range( n ) :
 
 ax = plt.figure().add_subplot(111, projection='3d')
 ax.plot(x,y,z,'-b')
+
+
+A = frenet.CrossSection(2,4,1 )
+G = frenet.Geometry(C,A)
+G.save("/tmp/test.geo")
+
 plt.show()
-#A = frenet.CrossSection(1,4,1 )
-#G = frenet.Geometry(C,A)
-#G.save("/tmp/test.geo")
