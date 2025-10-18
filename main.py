@@ -7,7 +7,7 @@ import frenet
 
 
 # the basecurve
-C = frenet.BasecurveCCT( 60, 60, 1, 68, 3 )
+C = frenet.BasecurveCCT( 60, 60, 1, 68, 4 )
 
 n = len(C.t)
 x = np.zeros( n )
@@ -20,9 +20,13 @@ for k in range( n ) :
     y[k] = r[1]
     z[k] = r[2]
 
-ax = plt.figure().add_subplot(111, projection='3d')
-ax.plot(x,y,z,'-b')
+fig = plt.figure()
 
+
+ax = fig.add_subplot(111, projection='3d')
+
+ax.plot(x,y,z,'-b')
+ax.set_aspect('equal')
 
 A = frenet.CrossSection(2,4,1 )
 G = frenet.Geometry(C,A)

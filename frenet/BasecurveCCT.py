@@ -128,7 +128,7 @@ class BasecurveCCT( Basecurve ) :
 
             dy0 = (y1 - y0) / dt
             dy1 = (y2 - y1) / dt
-            d2xdt2[1] = (dy1 - dy0) / dt
+            d2xdt2[1] = -(dy1 - dy0) / dt
             d2xdt2[2] = np.dot(self.cz1, self._deriv2(t))
         else:
             d2xdt2[0] = -self.R1 * np.cos(t)
@@ -179,10 +179,10 @@ class BasecurveCCT( Basecurve ) :
 
             d3xdt3[0] = np.dot(self.cx1, self._deriv3(t))
             d3xdt3[1] = (ddy1-ddy0)/dt
-            d3xdt3[2] = np.dot(self.cz01, self._deriv3(t))
+            d3xdt3[2] = np.dot(self.cz1, self._deriv3(t))
         else:
             d3xdt3[0] = self.R1 * np.sin(t)
-            d3xdt3[1] = -self.R2 * + np.cos(t)
+            d3xdt3[1] = -self.R2 * np.cos(t)
             d3xdt3[2] = self.R2 * (-np.cos(t) * self.tan_alpha)
         return d3xdt3
 
@@ -206,18 +206,21 @@ class BasecurveCCT( Basecurve ) :
         self.cx0 = self._compute_values(0, self.tmin, f0, df0, ddf0, dddf0, self._ta, f1, df1, ddf1, dddf1 )
         self.cz0 = self._compute_values(2, self.tmin, f0, df0, ddf0, dddf0, self._ta, f1, df1, ddf1, dddf1)
 
+        dz = self.r(self.tmin+0.5*np.pi)[2]-self.r(self.tmin)[2]
+        print("r0", self.r(self.tmin+0.5*np.pi))
+        print("r1", self.r(self.tmax-0.5*np.pi))
 
-        r = self.r(self.tmax )
+        r = self.r(self.tmax - 0.5*np.pi )
         f0[0] = 0
-        f0[1] = r[1]
-        f0[2] = r[2] + self.q * np.pi * 4
-        df0 = 0.5 * self.v(self.tmax)
+        f0[1] = -self.R2
+        f0[2] = r[2] + dz
+
+        df0 = -0.5 * self.v(self.tmax)
+
         f1 = self.r(self._tb)
         df1 = self.v(self._tb)
         ddf1 = self.a(self._tb)
         dddf1 = self.b(self._tb)
-
-        #f0 = f1-df
 
         self.cx1 = self._compute_values(0, self.tmax, f0, df0, ddf0, dddf0, self._tb, f1, df1, ddf1, dddf1)
         self.cz1 = self._compute_values(2, self.tmax, f0, df0, ddf0, dddf0, self._tb, f1, df1, ddf1, dddf1)
@@ -331,4 +334,5 @@ class BasecurveCCT( Basecurve ) :
         f[1] = 120 * t * t * t
         f[2] = 60 * t * t
         f[3] = 24 * t
+        f[4] = 6
         return f
