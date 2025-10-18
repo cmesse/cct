@@ -13,8 +13,10 @@ class Geometry :
         self.tape_blocks = []
         self.points = []
         self.curves = []
-        self.loops = []
+        self.curveloops = []
         self.surfaces = []
+        self.surfaceloops = []
+        self.volumes = []
 
         self._create_tapes()
         self._create_tape_blocks()
@@ -45,17 +47,19 @@ class Geometry :
 
     def _collect_geometry(self):
         cid = 0
-        lid = 0
+        clid = 0
         sid = 0
+        slid = 0
+        vid = 0
         for t in self.tapes:
             for c in t.curves :
                 cid += 1
                 c.id = cid
                 self.curves.append(c)
-            for l in t.loops :
-                lid+=1
-                l.id = lid
-                self.loops.append(l)
+            for l in t.curveloops :
+                clid+=1
+                l.id = clid
+                self.curveloops.append(l)
             for s in t.surfaces :
                 sid+=1
                 s.id = sid
@@ -66,14 +70,23 @@ class Geometry :
                 cid += 1
                 c.id = cid
                 self.curves.append(c)
-            for l in t.loops :
-                lid+=1
-                l.id = lid
-                self.loops.append(l)
+            for l in t.curveloops :
+                clid+=1
+                l.id = clid
+                self.curveloops.append(l)
             for s in t.surfaces :
                 sid+=1
                 s.id = sid
                 self.surfaces.append(s)
+            for l in t.surfaceloops :
+                slid += 1
+                l.id = slid
+                self.surfaceloops.append( l )
+            for v in t.volumes :
+                vid += 1
+                v.id = vid
+                self.volumes.append( v )
+
     def save(self,path: str):
         self._collect_points()
         self._collect_geometry()
@@ -85,11 +98,17 @@ class Geometry :
         for c in self.curves :
             F.Buffer.append( c.write())
 
-        for l in self.loops :
+        for l in self.curveloops :
             F.Buffer.append( l.write())
 
         for s in self.surfaces :
             F.Buffer.append(s.write())
+
+        for l in self.surfaceloops :
+            F.Buffer.append( l.write() )
+
+        for v in self.volumes :
+            F.Buffer.append( v.write() )
         F.save(path)
 
 

@@ -1,7 +1,7 @@
 from frenet.Curve import Curve
 
 
-class Loop :
+class CurveLoop :
     def __init__(self):
         self.id = 0
         self.curves = []

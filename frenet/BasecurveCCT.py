@@ -25,7 +25,7 @@ class BasecurveCCT( Basecurve ) :
 
 
     def r( self, t: float):
-        x = np.zeros([3,1])
+        x = np.zeros(3)
 
         # Russenschuck (3.34)
         x[0] = self.R1 * np.cos(t)
@@ -33,36 +33,30 @@ class BasecurveCCT( Basecurve ) :
         x[2] = self.R2 * ( np.sin(t) * self.tan_alpha + self.q * t )
         return x
 
-    def v( self, t):
-        t = np.atleast_1d(t)
-        dxdt = np.zeros((len(t), 3))
+    def v( self, t: float):
+        dxdt = np.zeros(3)
 
-        dxdt[:, 0] = -self.R1 * np.sin(t)
-        dxdt[:, 1] = self.R2 * np.cos(t)
-        dxdt[:, 2] = self.R2 * ( np.cos(t) * self.tan_alpha + self.q )
-        if dxdt.shape[0] == 1:
-            return dxdt[0]
+        dxdt[0] = -self.R1 * np.sin(t)
+        dxdt[1] = self.R2 * np.cos(t)
+        dxdt[2] = self.R2 * ( np.cos(t) * self.tan_alpha + self.q )
         return dxdt
 
-    def a( self, t ):
-        t = np.atleast_1d(t)
-        d2xdt2 = np.zeros((len(t), 3))
+    def a( self, t: float ):
+
+        d2xdt2 = np.zeros(3)
 
 
-        d2xdt2[:, 0] = -self.R1 * np.cos(t)
-        d2xdt2[:, 1] = -self.R2 * np.sin(t)
-        d2xdt2[:, 2] =  self.R2 * ( -np.sin(t) * self.tan_alpha )
-        if d2xdt2.shape[0] == 1:
-            return d2xdt2[0]
+        d2xdt2[0] = -self.R1 * np.cos(t)
+        d2xdt2[1] = -self.R2 * np.sin(t)
+        d2xdt2[2] =  self.R2 * ( -np.sin(t) * self.tan_alpha )
+
         return d2xdt2
 
-    def b(self, t):
-        t = np.atleast_1d(t)
-        d3xdt3 = np.zeros((len(t), 3))
+    def b(self, t: float ):
+        d3xdt3 = np.zeros(3)
 
-        d3xdt3[:, 0] = self.R1 * np.sin(t)
-        d3xdt3[:, 1] = -self.R2 * np.cos(t)
-        d3xdt3[:, 2] = self.R2 * (-np.cos(t) * self.tan_alpha)
-        if d3xdt3.shape[0] == 1:
-            return d3xdt3[0]
+        d3xdt3[0] = self.R1 * np.sin(t)
+        d3xdt3[1] = -self.R2 * np.cos(t)
+        d3xdt3[2] = self.R2 * (-np.cos(t) * self.tan_alpha)
+
         return d3xdt3
