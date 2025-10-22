@@ -9,6 +9,7 @@ class BasecurveCCT( Basecurve ) :
     def __init__(self, R1: float, R2: float, pitch: float, angle: float, nturns: int ):
 
         Basecurve.__init__( self )
+        self._isCCT = True
 
         # first radius
         self.R1 = R1
@@ -24,9 +25,9 @@ class BasecurveCCT( Basecurve ) :
 
         self.tmin = 0
         self.tmax = nturns * np.pi * 2 + np.pi
-        n = nturns * self.num_points_per_turn
+        self.numpoints = nturns * self.num_points_per_turn
 
-        self.t = np.linspace( self.tmin, self.tmax, n )
+        self.t = np.linspace( self.tmin, self.tmax, self.numpoints )
 
         #self.t, self.s = self.make_equidistant(self.tmin, self.tmax, nturns * self.num_points_per_turn )
 
@@ -65,7 +66,7 @@ class BasecurveCCT( Basecurve ) :
 
     def v( self, t: float):
         dxdt = np.zeros(3)
-        dt = 1e-6
+        dt = 1e-3
 
         if t < self._ta and self._is_initialized :
 
@@ -96,7 +97,7 @@ class BasecurveCCT( Basecurve ) :
     def a( self, t: float ):
 
         d2xdt2 = np.zeros(3)
-        dt = 1e-6
+        dt = 1e-3
 
         if t < self._ta and self._is_initialized :
             d2xdt2[0] = np.dot(self.cx0, self._deriv2(t))
@@ -139,7 +140,7 @@ class BasecurveCCT( Basecurve ) :
 
     def b(self, t: float ):
         d3xdt3 = np.zeros(3)
-        dt = 1e-6
+        dt = 1e-3
         if t < self._ta and self._is_initialized :
             x0 = np.polyval(self.cx0, t - 1.5*dt)
             x1 = np.polyval(self.cx0, t - 0.5*dt)
@@ -207,8 +208,6 @@ class BasecurveCCT( Basecurve ) :
         self.cz0 = self._compute_values(2, self.tmin, f0, df0, ddf0, dddf0, self._ta, f1, df1, ddf1, dddf1)
 
         dz = self.r(self.tmin+0.5*np.pi)[2]-self.r(self.tmin)[2]
-        print("r0", self.r(self.tmin+0.5*np.pi))
-        print("r1", self.r(self.tmax-0.5*np.pi))
 
         r = self.r(self.tmax - 0.5*np.pi )
         f0[0] = 0
@@ -216,7 +215,7 @@ class BasecurveCCT( Basecurve ) :
         f0[2] = r[2] + dz
 
         df0 = -0.5 * self.v(self.tmax)
-
+        #ddf0[0] = -1
         f1 = self.r(self._tb)
         df1 = self.v(self._tb)
         ddf1 = self.a(self._tb)

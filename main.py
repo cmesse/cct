@@ -28,6 +28,22 @@ ax = fig.add_subplot(111, projection='3d')
 ax.plot(x,y,z,'-b')
 ax.set_aspect('equal')
 
+r = C.r( C.tmin)
+v = C.v( C.tmin)
+a = C.a( C.tmin)
+
+
+print( r )
+print( v )
+print( a )
+
+r = C.r( C.tmax)
+v = C.v( C.tmax)
+a = C.a( C.tmax)
+
+print( r )
+print( v )
+print( a )
 A = frenet.CrossSection(2,4,1 )
 G = frenet.Geometry(C,A)
 G.save("/tmp/test.geo")

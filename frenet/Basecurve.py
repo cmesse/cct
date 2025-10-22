@@ -12,6 +12,7 @@ class Basecurve :
         self.theta = None
         self._thetaspline = None
         self.num_points_per_turn = 48
+        self._isCCT = False
 
     # the actual basecurve function
     def r( self, t: float ):
@@ -94,10 +95,14 @@ class Basecurve :
 
     def transform(self, t: float, theta_T: float = 0.0 ):
 
-        if t == 0 :
+        if t == 0 and self._isCCT:
             T = np.array([0.0,0.0,1.0])
             N = np.array([-1.0, 0.0, 0.0])
             B = np.array([0.0, -1.0, 0.0])
+        elif t == self.tmax and self._isCCT:
+            T = np.array([0.0, 0.0, 1.0])
+            B = np.array([0.0, 1.0, 0.0])
+            N = np.array([1.0, 0.0, 0.0])
         else:
             v = self.v(t)
             a = self.a(t)
@@ -111,6 +116,8 @@ class Basecurve :
             N = np.cross(B, T)
             N /= np.linalg.norm(N)
 
+        if t :
+            print( "N", t  , T , B)
         # For geodesic strip: n = N, b = B (before twist)
         # Apply additional twist around T (Equations 19.32-19.33)
         cos_theta = np.cos(theta_T)
