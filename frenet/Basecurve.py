@@ -116,8 +116,6 @@ class Basecurve :
             N = np.cross(B, T)
             N /= np.linalg.norm(N)
 
-        if t :
-            print( "N", t  , T , B)
         # For geodesic strip: n = N, b = B (before twist)
         # Apply additional twist around T (Equations 19.32-19.33)
         cos_theta = np.cos(theta_T)
