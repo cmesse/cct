@@ -28,7 +28,7 @@ ax = fig.add_subplot(111, projection='3d')
 ax.plot(x,y,z,'-b')
 ax.set_aspect('equal')
 
-A = frenet.CrossSection(1,4,1 )
+A = frenet.CrossSection(2,4,1 )
 G = frenet.Geometry(C,A)
 G.save("/tmp/test.geo")
 

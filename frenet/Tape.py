@@ -46,7 +46,12 @@ class Tape:
         for k in range(n):
             t = self.basecurve.t[k]
             m = self.basecurve.r(t)
-            T = self.basecurve.transform(t)
+            if len(self.basecurve.theta ) > 0 :
+                theta = self.basecurve.theta[k]
+            else:
+                theta = 0.0
+
+            T = self.basecurve.transform(t, theta )
 
             # left point
             p0 = np.array([

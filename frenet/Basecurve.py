@@ -115,8 +115,6 @@ class Basecurve :
         n = cos_theta * N + sin_theta * B
         b = cos_theta * B - sin_theta * N
 
-        print( t, "N", N )
-        print( t, "B", B )
         # Transformation matrix: columns are the basis vectors
         R = np.zeros([3, 3])
         R[:, 0] = n  # Strip normal (corresponds to x0 direction - thickness )
@@ -185,6 +183,39 @@ class Basecurve :
                 tau, kappa_g, kappa_n = self.strip_curvatures(tk, theta_k, dtheta_dt )
 
                 val_k += self._weights[i] * kappa_g * kappa_g
+
+            val_k *= (tb - ta) * 0.5
+
+            val += val_k
+
+        return val
+
+    def _integrate_torsion(self, t, theta ):
+
+
+        n = len(t)
+
+        val = 0.0
+
+        # loop over all segments
+        for k in range(1,n):
+
+            k0 = max(k-3,0)
+            k1 = min(k+3,n)
+            spline = interpolate.splrep(t[k0:k1], theta[k0:k1])
+            ta = t[k-1]
+            tb = t[k]
+
+            # loop over all integration points
+            val_k = 0
+            for i in range(self._nintpoints):
+                tk = 0.5*((1-self._intpoints[i])*ta + ( 1 + self._intpoints[i])*tb)
+                theta_k = interpolate.splev(tk, spline, der=0)
+                dtheta_dt = interpolate.splev(tk, spline, der=1)
+
+                tau, kappa_g, kappa_n = self.strip_curvatures(tk, theta_k, dtheta_dt )
+
+                val_k += self._weights[i] * tau * tau
 
             val_k *= (tb - ta) * 0.5
 

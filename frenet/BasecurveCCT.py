@@ -1,8 +1,60 @@
 import math
 
 import numpy as np
+import scipy.optimize
+from fontTools.ttLib.tables.S_V_G_ import doc_index_entry_format_0
+
 from frenet.Basecurve import Basecurve
 
+def _make_poly( x0: float, f0: float, df0: float, x1: float, f1: float, x2: float, f2: float, df2: float ):
+
+    V = np.zeros([5,5])
+    V[0][0] = x0*x0*x0*x0
+    V[0][1] = x0*x0*x0
+    V[0][2] = x0*x0
+    V[0][3] = x0
+    V[0][4] = 1
+
+    V[1][0] = 4 * x0 * x0 * x0
+    V[1][1] = 3 * x0 * x0
+    V[1][2] = 2 * x0
+    V[1][3] = 1
+    V[1][4] = 0
+
+    V[2][0] = x1 * x1 * x1 * x1
+    V[2][1] = x1 * x1 * x1
+    V[2][2] = x1 * x1
+    V[2][3] = x1
+    V[2][4] = 1
+
+    V[3][0] = x2 * x2 * x2 * x2
+    V[3][1] = x2 * x2 * x2
+    V[3][2] = x2 * x2
+    V[3][3] = x2
+    V[3][4] = 1
+
+    V[4][0] = 4 * x2 * x2 * x2
+    V[4][1] = 3 * x2 * x2
+    V[4][2] = 2 * x2
+    V[4][3] = 1
+    V[4][4] = 0
+
+    f = np.zeros(5)
+    f[0] = f0
+    f[1] = df0
+    f[2] = f1
+    f[3] = f2
+    f[4] = df2
+    return  np.linalg.solve(V,f)
+
+def _optimize_cct_torsion( x: np.ndarray, curve: Basecurve ):
+    curve.ca = _make_poly(0,0, 0, x[0], x[1], 1, 0, 0)
+    curve.cb = _make_poly(0,0, 0, x[2], x[3], 1, 0, 0)
+
+    curve._compute_torsion()
+    #g = curve._integrate_geodesic_curvature(curve.t, curve.theta)
+    g = curve._integrate_torsion( curve.t, curve.theta )
+    return g
 
 class BasecurveCCT( Basecurve ) :
 
@@ -29,8 +81,6 @@ class BasecurveCCT( Basecurve ) :
 
         self.t = np.linspace( self.tmin, self.tmax, self.numpoints )
 
-        #self.t, self.s = self.make_equidistant(self.tmin, self.tmax, nturns * self.num_points_per_turn )
-
         self._ta = self.tmin + np.pi
         self._tb = self.tmax - np.pi
 
@@ -39,9 +89,31 @@ class BasecurveCCT( Basecurve ) :
         self.cx1 = np.zeros(8)
         self.cz1 = np.zeros(8)
 
+        self.ca = np.zeros(3)
+        self.cb = np.zeros(3)
+
         self._is_initialized = False
 
         self._init_polys()
+
+        x0 = 0.5 * np.ones(4)
+
+        res = scipy.optimize.minimize(_optimize_cct_torsion, x0, args=self, method='SLSQP',
+                                options={'ftol': 1e-3, 'eps': 0.01})
+
+        print( res.x )
+        #_optimize_cct_torsion( res.x , self )
+
+    def _compute_torsion(self):
+        self.theta = np.zeros(self.numpoints)
+        for k in range(self.numpoints):
+            t = self.t[k]
+            if t < self._ta :
+                xi = ( self._ta - t ) / self._ta
+                self.theta[k] = np.polyval(self.ca, xi) * np.pi
+            elif t > self._tb :
+                xi = ( t - self._tb ) / ( self.tmax - self._tb )
+                self.theta[k] = np.polyval(self.cb, xi)  * np.pi
 
     def r( self, t: float):
         x = np.zeros(3)
