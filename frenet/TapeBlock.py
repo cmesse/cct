@@ -91,6 +91,7 @@ class TapeBlock:
         S2 = Surface()
         S2.loops.append(L2)
         self.surfaces.append(S2)
+        self.left = S2
 
         L3 = CurveLoop()
         L3.curves.append(r0)
@@ -106,6 +107,7 @@ class TapeBlock:
         S3 = Surface()
         S3.loops.append(L3)
         self.surfaces.append(S3)
+        self.right = S3
 
         V = Volume()
 

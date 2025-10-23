@@ -17,7 +17,7 @@ class CrossSection:
         self.rightpoints = np.zeros( [numtapes,2] )
 
         for k in range(self.numtapes) :
-            self.leftpoints[k][0] = -0.5*tapewidth
-            self.leftpoints[k][1] = m[k]
-            self.rightpoints[k][0] = 0.5 * tapewidth
-            self.rightpoints[k][1] = m[k]
+            self.leftpoints[k][0] = m[k]
+            self.leftpoints[k][1] = -0.5*tapewidth
+            self.rightpoints[k][0] = m[k]
+            self.rightpoints[k][1] = 0.5*tapewidth

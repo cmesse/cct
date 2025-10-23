@@ -7,7 +7,7 @@ import frenet
 
 
 # the basecurve
-C = frenet.BasecurveCCT( 60, 60, 1, 68, 4 )
+C = frenet.BasecurveCCT( 60, 60, 0.25, 68, 4 )
 
 n = len(C.t)
 x = np.zeros( n )
@@ -28,8 +28,8 @@ ax = fig.add_subplot(111, projection='3d')
 ax.plot(x,y,z,'-b')
 ax.set_aspect('equal')
 
-A = frenet.CrossSection(2,4,1 )
-G = frenet.Geometry(C,A)
+A = frenet.CrossSection(4,4,1 )
+G = frenet.Geometry(C, A, air_radius=20.0, tape_res=1.0, air_res = 20.0)
 G.save("/tmp/test.geo")
 
 plt.show()

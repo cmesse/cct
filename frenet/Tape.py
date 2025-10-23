@@ -7,7 +7,7 @@ from frenet.Surface import *
 
 class Tape:
 
-    def __init__(self, basecurve: Basecurve, cross_section: CrossSection, index: int ):
+    def __init__(self, basecurve: Basecurve, cross_section: CrossSection, index: int, tape_res: float ):
         self.index = index
         self.id = index + 1
         self.basecurve = basecurve
@@ -17,8 +17,8 @@ class Tape:
         self.points_right = []
 
         # todo: to be set into parameter object
-        self.resolution = 5
-        self.make_ends = False
+        self.resolution = tape_res
+        self.make_ends = True
         self.delta_z = 200
 
         self._make_points()
