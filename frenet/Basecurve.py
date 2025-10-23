@@ -95,26 +95,17 @@ class Basecurve :
 
     def transform(self, t: float, theta_T: float = 0.0 ):
 
-        if t == 0 and self._isCCT:
-            T = np.array([0.0,0.0,1.0])
-            N = np.array([-1.0, 0.0, 0.0])
-            B = np.array([0.0, -1.0, 0.0])
-        elif t == self.tmax and self._isCCT:
-            T = np.array([0.0, 0.0, 1.0])
-            B = np.array([0.0, 1.0, 0.0])
-            N = np.array([1.0, 0.0, 0.0])
-        else:
-            v = self.v(t)
-            a = self.a(t)
+        v = self.v(t)
+        a = self.a(t)
 
-            # Tangent (same for both frames)
-            T = v / np.linalg.norm(v)
+        # Tangent (same for both frames)
+        T = v / np.linalg.norm(v)
 
-            # Classical Frenet frame
-            vxa = np.cross(v, a)
-            B = vxa / np.linalg.norm(vxa)
-            N = np.cross(B, T)
-            N /= np.linalg.norm(N)
+        # Classical Frenet frame
+        vxa = np.cross(v, a)
+        B = vxa / np.linalg.norm(vxa)
+        N = np.cross(B, T)
+        N /= np.linalg.norm(N)
 
         # For geodesic strip: n = N, b = B (before twist)
         # Apply additional twist around T (Equations 19.32-19.33)
@@ -126,8 +117,8 @@ class Basecurve :
 
         # Transformation matrix: columns are the basis vectors
         R = np.zeros([3, 3])
-        R[:, 0] = n  # Strip normal (corresponds to x0 direction - width)
-        R[:, 1] = b  # Strip binormal (corresponds to y0 direction - thickness)
+        R[:, 0] = n  # Strip normal (corresponds to x0 direction - thickness )
+        R[:, 1] = b  # Strip binormal (corresponds to y0 direction - width )
         R[:, 2] = T  # Tangent (corresponds to z0 direction - length)
 
         return R
@@ -192,6 +183,39 @@ class Basecurve :
                 tau, kappa_g, kappa_n = self.strip_curvatures(tk, theta_k, dtheta_dt )
 
                 val_k += self._weights[i] * kappa_g * kappa_g
+
+            val_k *= (tb - ta) * 0.5
+
+            val += val_k
+
+        return val
+
+    def _integrate_torsion(self, t, theta ):
+
+
+        n = len(t)
+
+        val = 0.0
+
+        # loop over all segments
+        for k in range(1,n):
+
+            k0 = max(k-3,0)
+            k1 = min(k+3,n)
+            spline = interpolate.splrep(t[k0:k1], theta[k0:k1])
+            ta = t[k-1]
+            tb = t[k]
+
+            # loop over all integration points
+            val_k = 0
+            for i in range(self._nintpoints):
+                tk = 0.5*((1-self._intpoints[i])*ta + ( 1 + self._intpoints[i])*tb)
+                theta_k = interpolate.splev(tk, spline, der=0)
+                dtheta_dt = interpolate.splev(tk, spline, der=1)
+
+                tau, kappa_g, kappa_n = self.strip_curvatures(tk, theta_k, dtheta_dt )
+
+                val_k += self._weights[i] * tau * tau
 
             val_k *= (tb - ta) * 0.5
 

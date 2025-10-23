@@ -1,8 +1,60 @@
 import math
 
 import numpy as np
+import scipy.optimize
+from fontTools.ttLib.tables.S_V_G_ import doc_index_entry_format_0
+
 from frenet.Basecurve import Basecurve
 
+def _make_poly( x0: float, f0: float, df0: float, x1: float, f1: float, x2: float, f2: float, df2: float ):
+
+    V = np.zeros([5,5])
+    V[0][0] = x0*x0*x0*x0
+    V[0][1] = x0*x0*x0
+    V[0][2] = x0*x0
+    V[0][3] = x0
+    V[0][4] = 1
+
+    V[1][0] = 4 * x0 * x0 * x0
+    V[1][1] = 3 * x0 * x0
+    V[1][2] = 2 * x0
+    V[1][3] = 1
+    V[1][4] = 0
+
+    V[2][0] = x1 * x1 * x1 * x1
+    V[2][1] = x1 * x1 * x1
+    V[2][2] = x1 * x1
+    V[2][3] = x1
+    V[2][4] = 1
+
+    V[3][0] = x2 * x2 * x2 * x2
+    V[3][1] = x2 * x2 * x2
+    V[3][2] = x2 * x2
+    V[3][3] = x2
+    V[3][4] = 1
+
+    V[4][0] = 4 * x2 * x2 * x2
+    V[4][1] = 3 * x2 * x2
+    V[4][2] = 2 * x2
+    V[4][3] = 1
+    V[4][4] = 0
+
+    f = np.zeros(5)
+    f[0] = f0
+    f[1] = df0
+    f[2] = f1
+    f[3] = f2
+    f[4] = df2
+    return  np.linalg.solve(V,f)
+
+def _optimize_cct_torsion( x: np.ndarray, curve: Basecurve ):
+    curve.ca = _make_poly(0,0, 0, x[0], x[1], 1, 0, 0)
+    curve.cb = _make_poly(0,0, 0, x[2], x[3], 1, 0, 0)
+
+    curve._compute_torsion()
+    #g = curve._integrate_geodesic_curvature(curve.t, curve.theta)
+    g = curve._integrate_torsion( curve.t, curve.theta )
+    return g
 
 class BasecurveCCT( Basecurve ) :
 
@@ -29,8 +81,6 @@ class BasecurveCCT( Basecurve ) :
 
         self.t = np.linspace( self.tmin, self.tmax, self.numpoints )
 
-        #self.t, self.s = self.make_equidistant(self.tmin, self.tmax, nturns * self.num_points_per_turn )
-
         self._ta = self.tmin + np.pi
         self._tb = self.tmax - np.pi
 
@@ -39,9 +89,31 @@ class BasecurveCCT( Basecurve ) :
         self.cx1 = np.zeros(8)
         self.cz1 = np.zeros(8)
 
+        self.ca = np.zeros(3)
+        self.cb = np.zeros(3)
+
         self._is_initialized = False
 
         self._init_polys()
+
+        x0 = 0.5 * np.ones(4)
+
+        res = scipy.optimize.minimize(_optimize_cct_torsion, x0, args=self, method='SLSQP',
+                                options={'ftol': 1e-3, 'eps': 0.01})
+
+        print( res.x )
+        #_optimize_cct_torsion( res.x , self )
+
+    def _compute_torsion(self):
+        self.theta = np.zeros(self.numpoints)
+        for k in range(self.numpoints):
+            t = self.t[k]
+            if t < self._ta :
+                xi = ( self._ta - t ) / self._ta
+                self.theta[k] = np.polyval(self.ca, xi) * np.pi
+            elif t > self._tb :
+                xi = ( t - self._tb ) / ( self.tmax - self._tb )
+                self.theta[k] = np.polyval(self.cb, xi)  * np.pi
 
     def r( self, t: float):
         x = np.zeros(3)
@@ -193,7 +265,7 @@ class BasecurveCCT( Basecurve ) :
         f0[0] = 0
         f0[1] = self.R2
         f0[2] = 0
-        df0   = 0.5*self.v(self.tmin)
+        df0 = 0.5*self.v(self.tmin)
         ddf0  = np.zeros(3)
         dddf0 = np.zeros(3)
 
@@ -215,7 +287,7 @@ class BasecurveCCT( Basecurve ) :
         f0[2] = r[2] + dz
 
         df0 = -0.5 * self.v(self.tmax)
-        #ddf0[0] = -1
+
         f1 = self.r(self._tb)
         df1 = self.v(self._tb)
         ddf1 = self.a(self._tb)
@@ -327,6 +399,7 @@ class BasecurveCCT( Basecurve ) :
         f[4] = 6 * t
         f[5] = 2
         return f
+
     def _deriv3(self, t: float ):
         f = np.zeros(8)
         f[0] = 210 * t * t * t * t
@@ -335,3 +408,36 @@ class BasecurveCCT( Basecurve ) :
         f[3] = 24 * t
         f[4] = 6
         return f
+
+    def transform(self, t: float, theta_T: float = 0.0 ):
+
+        if t == 0 :
+
+            N = np.array([-1.0, 0.0, 0.0])
+            B = np.array([0.0, -1.0, 0.0])
+            T = np.array([0.0, 0.0, 1.0])
+        elif t == self.tmax:
+            N = np.array([1.0, 0.0, 0.0])
+            B = np.array([0.0, 1.0, 0.0])
+            T = np.array([0.0, 0.0, 1.0])
+
+
+        else:
+            return Basecurve.transform( self, t, theta_T)
+
+        # For geodesic strip: n = N, b = B (before twist)
+        # Apply additional twist around T (Equations 19.32-19.33)
+        cos_theta = np.cos(theta_T)
+        sin_theta = np.sin(theta_T)
+
+        n = cos_theta * N + sin_theta * B
+        b = cos_theta * B - sin_theta * N
+
+        # Transformation matrix: columns are the basis vectors
+        R = np.zeros([3, 3])
+        R[:, 0] = n  # Strip normal (corresponds to x0 direction - thickness )
+        R[:, 1] = b  # Strip binormal (corresponds to y0 direction - width )
+        R[:, 2] = T  # Tangent (corresponds to z0 direction - length)
+
+        return R
+

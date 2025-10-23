@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from frenet.Curve import Curve
 from frenet.Basecurve import Basecurve
@@ -44,16 +46,20 @@ class Tape:
         for k in range(n):
             t = self.basecurve.t[k]
             m = self.basecurve.r(t)
-            T = self.basecurve.transform(t)
+            if len(self.basecurve.theta ) > 0 :
+                theta = self.basecurve.theta[k]
+            else:
+                theta = 0.0
+
+            T = self.basecurve.transform(t, theta )
 
             # left point
             p0 = np.array([
-                self.cross_section.leftpoints[self.index][0],  # width direction (n)
-                self.cross_section.leftpoints[self.index][1],  # thickness direction (b)
+                self.cross_section.leftpoints[self.index][0],  # thickness direction (n)
+                self.cross_section.leftpoints[self.index][1],  # width direction (b)
                 0.0
             ])
-            p = m.flatten() + T @ p0
-
+            p = m+ np.dot(T,p0)
             self.points_left.append(Point(p[0], p[1], p[2], self.resolution))
 
             # right point
@@ -62,7 +68,7 @@ class Tape:
                 self.cross_section.rightpoints[self.index][1],
                 0.0
             ])
-            q = m.flatten() + T @ q0
+            q = m +  np.dot(T,q0)
 
             self.points_right.append(Point(q[0], q[1], q[2], self.resolution))
 
@@ -129,6 +135,7 @@ class Tape:
             for k in range(1, n):
                 P = Point(x0 + xi[k] * v[0], y0 + xi[k] * v[1], z0 + xi[k] * v[2], self.resolution)
                 self.points_right.append(P)
+
     def _make_curves(self):
 
         F = Curve("Line")
