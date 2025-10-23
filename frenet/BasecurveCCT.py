@@ -193,7 +193,7 @@ class BasecurveCCT( Basecurve ) :
         f0[0] = 0
         f0[1] = self.R2
         f0[2] = 0
-        df0   = 0.5*self.v(self.tmin)
+        df0 = 0.5*self.v(self.tmin)
         ddf0  = np.zeros(3)
         dddf0 = np.zeros(3)
 
@@ -215,7 +215,7 @@ class BasecurveCCT( Basecurve ) :
         f0[2] = r[2] + dz
 
         df0 = -0.5 * self.v(self.tmax)
-        #ddf0[0] = -1
+
         f1 = self.r(self._tb)
         df1 = self.v(self._tb)
         ddf1 = self.a(self._tb)
@@ -327,6 +327,7 @@ class BasecurveCCT( Basecurve ) :
         f[4] = 6 * t
         f[5] = 2
         return f
+
     def _deriv3(self, t: float ):
         f = np.zeros(8)
         f[0] = 210 * t * t * t * t
@@ -335,3 +336,36 @@ class BasecurveCCT( Basecurve ) :
         f[3] = 24 * t
         f[4] = 6
         return f
+
+    def transform(self, t: float, theta_T: float = 0.0 ):
+
+        if t == 0 :
+
+            N = np.array([-1.0, 0.0, 0.0])
+            B = np.array([0.0, -1.0, 0.0])
+            T = np.array([0.0, 0.0, 1.0])
+        elif t == self.tmax:
+            N = np.array([1.0, 0.0, 0.0])
+            B = np.array([0.0, 1.0, 0.0])
+            T = np.array([0.0, 0.0, 1.0])
+
+
+        else:
+            return Basecurve.transform( self, t, theta_T)
+
+        # For geodesic strip: n = N, b = B (before twist)
+        # Apply additional twist around T (Equations 19.32-19.33)
+        cos_theta = np.cos(theta_T)
+        sin_theta = np.sin(theta_T)
+
+        n = cos_theta * N + sin_theta * B
+        b = cos_theta * B - sin_theta * N
+
+        # Transformation matrix: columns are the basis vectors
+        R = np.zeros([3, 3])
+        R[:, 0] = n  # Strip normal (corresponds to x0 direction - thickness )
+        R[:, 1] = b  # Strip binormal (corresponds to y0 direction - width )
+        R[:, 2] = T  # Tangent (corresponds to z0 direction - length)
+
+        return R
+
